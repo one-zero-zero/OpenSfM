@@ -7,5 +7,6 @@ COPY calibrate-image-set.py .
 RUN mkdir -p /external/in
 VOLUME /external/in
 
+WORKDIR /external/in/
 # ENTRYPOINT ["python3"]
 CMD ["python3", "calibrate-image-set.py", "-df", "/external/in"]

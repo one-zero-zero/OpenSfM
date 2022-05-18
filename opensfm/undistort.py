@@ -439,20 +439,33 @@ def generate_perspective_images_of_a_panorama(
 
     mint = cv2.INTER_LINEAR if interpolation == cv2.INTER_AREA else interpolation
 
+    # import os
+    # import sys
+    # from opensfm.io import imwrite
+    # imwrite("/tmp/spherical.png", pano_image)
+
     trec = types.Reconstruction()
     pano_camera = pygeometry.Camera.create_spherical()
-    pano_camera = None
     pano_camera.id = "generic_panoramic_camera"
     pano_camera.height = pano_image.shape[0]
     pano_camera.width = pano_image.shape[1]
     trec.add_camera(pano_camera)
     pano_shot = trec.create_pano_shot("panoramic_shot", pano_camera.id)
+    rig_instance_count = itertools.count()
 
-    shots = perspective_views_of_a_panorama(pano_shot, width, trec, 'png', 0)
+    shots = perspective_views_of_a_panorama(pano_shot, width, trec, 'png', rig_instance_count)
 
+    # rid = 0
     images = {}
     for undistorted_shot in shots:
+        # print( f"rid {rid}: {undistorted_shot.id}: {undistorted_shot.camera.width} x {undistorted_shot.camera.height}" )
+        # rid += 1
         undistorted = render_perspective_view_of_a_panorama(
-                    pano_image, pano_shot, undistorted_shot, mint )
+                    pano_image, pano_shot, undistorted_shot, mint)
         images[undistorted_shot] = undistorted
+        # print( 'rendering done' )
+        # imwrite(os.path.join("/tmp/", undistorted_shot.id), undistorted)
+        # print( 'saving done')
+    # print( 'finished')
+    # sys.exit(1)
     return images

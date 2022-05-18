@@ -602,9 +602,8 @@ def extract_features(
 
     if is_panorama:
         print('this is a panorama image')
-        max_size = config["undistorted_image_max_size"]
-        sub_images = generate_perspective_images_of_a_panorama(image_gray, max_size, cv2.INTER_AREA)
-
+        subshot_width = int(extraction_size/4)
+        sub_images = generate_perspective_images_of_a_panorama(image_gray, subshot_width, cv2.INTER_AREA)
 
     feature_type = config["feature_type"].upper()
     if feature_type == "SIFT":
