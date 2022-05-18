@@ -8,7 +8,6 @@ import cv2
 import numpy as np
 from opensfm import context, pyfeatures
 
-
 logger: logging.Logger = logging.getLogger(__name__)
 
 
@@ -578,6 +577,8 @@ def extract_features(
         - descriptors: the descriptor of each feature
         - colors: the color of the center of each feature
     """
+    from opensfm.undistort import generate_perspective_images_of_a_panorama
+
     extraction_size = (
         config["feature_process_size_panorama"]
         if is_panorama
@@ -598,6 +599,13 @@ def extract_features(
         image_gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
     else:
         image_gray = image
+
+    if is_panorama:
+        print('this is a panorama image')
+        max_size = config["undistorted_image_max_size"]
+        sub_images = generate_perspective_images_of_a_panorama(image_gray, max_size, cv2.INTER_AREA)
+
+
     feature_type = config["feature_type"].upper()
     if feature_type == "SIFT":
         points, desc = extract_features_sift(image_gray, config, features_count)

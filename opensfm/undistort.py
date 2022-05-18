@@ -430,3 +430,29 @@ def add_pano_subshot_tracks(
 
         obs.point = perspective_feature
         utracks_manager.add_observation(perspectiveshot.id, track_id, obs)
+
+
+def generate_perspective_images_of_a_panorama(
+    pano_image: np.ndarray,
+    width: int ,
+    interpolation=cv2.INTER_LINEAR ) -> Dict[pymap.Shot, np.ndarray]:
+
+    mint = cv2.INTER_LINEAR if interpolation == cv2.INTER_AREA else interpolation
+
+    trec = types.Reconstruction()
+    pano_camera = pygeometry.Camera.create_spherical()
+    pano_camera = None
+    pano_camera.id = "generic_panoramic_camera"
+    pano_camera.height = pano_image.shape[0]
+    pano_camera.width = pano_image.shape[1]
+    trec.add_camera(pano_camera)
+    pano_shot = trec.create_pano_shot("panoramic_shot", pano_camera.id)
+
+    shots = perspective_views_of_a_panorama(pano_shot, width, trec, 'png', 0)
+
+    images = {}
+    for undistorted_shot in shots:
+        undistorted = render_perspective_view_of_a_panorama(
+                    pano_image, pano_shot, undistorted_shot, mint )
+        images[undistorted_shot] = undistorted
+    return images

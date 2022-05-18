@@ -1,13 +1,11 @@
 # FROM registry.gitlab.com/julien_invision/opensfm:2022-02-10
 FROM opensfm-local
 
-RUN apt-get update -qq && apt-get install -y ffmpeg exiftool exiv2
-
 WORKDIR /scripts
 COPY calibrate-image-set.py .
 
 RUN mkdir -p /external/in
 VOLUME /external/in
 
-ENTRYPOINT ["python3"]
-CMD ["calibrate-image-set.py", "-df", "/external/in"]
+# ENTRYPOINT ["python3"]
+CMD ["python3", "calibrate-image-set.py", "-df", "/external/in"]
