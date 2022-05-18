@@ -7,6 +7,10 @@ from typing import Tuple, Dict, Any, List, Optional
 import cv2
 import numpy as np
 from opensfm import context, pyfeatures
+# from opensfm import pygeometry
+# from opensfm import transformations as tf
+# from opensfm import pymap
+# from opensfm import undistort
 
 
 logger: logging.Logger = logging.getLogger(__name__)
@@ -554,6 +558,40 @@ def extract_features_orb(
     logger.debug("Found {0} points in {1}s".format(len(points), time.time() - t))
     return points, desc
 
+# def generate_perspective_shots_of_a_panorama(width):
+#     """Create 6 perspective views of a panorama."""
+#     camera = pygeometry.Camera.create_perspective(0.5, 0.0, 0.0)
+#     camera.id = "perspective_panorama_camera"
+#     camera.width = width
+#     camera.height = width
+#     names = ["front", "left", "back", "right", "top", "bottom"]
+#     rotations = [
+#         tf.rotation_matrix(-0 * np.pi / 2, (0, 1, 0)),
+#         tf.rotation_matrix(-1 * np.pi / 2, (0, 1, 0)),
+#         tf.rotation_matrix(-2 * np.pi / 2, (0, 1, 0)),
+#         tf.rotation_matrix(-3 * np.pi / 2, (0, 1, 0)),
+#         tf.rotation_matrix(-np.pi / 2, (1, 0, 0)),
+#         tf.rotation_matrix(+np.pi / 2, (1, 0, 0)),
+#     ]
+#     shots = []
+#     for name, rotation in zip(names, rotations):
+#         camera_pose = pygeometry.Pose()
+#         camera_pose.set_rotation_matrix(rotation[:3, :3])
+#         shot_id = f"perspective_view_{name}.png"
+#         shot = pymap.Map().create_shot(shot_id, camera.id, camera_pose)
+#         shots.append(shot)
+#     return shots
+
+# def generate_perspective_images_of_a_panorama(pano_image, width, interpolation):
+#     mint = cv2.INTER_LINEAR if interpolation == cv2.INTER_AREA else interpolation
+#     pano_shot = None
+#     shots = generate_perspective_shots_of_a_panorama(width)
+#     images = []
+#     for undistorted_shot in shots:
+#         undistorted = undistort.render_perspective_view_of_a_panorama(
+#                     pano_image, pano_shot, undistorted_shot, mint )
+#         images.append(undistorted)
+#     return images, shots
 
 def extract_features(
     image: np.ndarray, config: Dict[str, Any], is_panorama: bool
@@ -588,6 +626,11 @@ def extract_features(
         if is_panorama
         else config["feature_min_frames"]
     )
+
+
+    # if is_panorama:
+    #     max_size = config["undistorted_image_max_size"]
+    #     sub_images, sub_shots = generate_perspective_images_of_a_panorama(image, max_size, cv2.INTER_AREA )
 
     assert len(image.shape) == 3 or len(image.shape) == 2
     image = resized_image(image, extraction_size)
