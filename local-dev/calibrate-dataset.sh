@@ -26,4 +26,4 @@ fi
 docker run \
     -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro --user $(id -u):$(id -g) \
     -v "${dataset_folder}"/:/external/in \
-    -it --rm calibration_docker
+    -it --rm calibration_docker bash

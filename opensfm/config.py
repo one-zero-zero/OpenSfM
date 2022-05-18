@@ -33,6 +33,8 @@ class OpenSfMConfig:
     feature_use_adaptive_suppression: bool = False
     # Bake segmentation info (class and instance) in the feature data. Thus it is done once for all at extraction time.
     features_bake_segmentation: bool = False
+    # compute the cubemap images from the panorama and extract the features from the cubemap textures for panorama
+    feature_extract_from_cubemap_panorama: bool = True
 
     ##################################
     # Params for SIFT

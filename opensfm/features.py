@@ -579,14 +579,19 @@ def extract_features(
     """
     from opensfm.undistort import generate_perspective_images_of_a_panorama
 
+    cubemap_extraction = False
+    if is_panorama:
+        cubemap_extraction = config["feature_extract_from_cubemap_panorama"]
+        print( 'cubemap based feature extraction enabled')
+
     extraction_size = (
         config["feature_process_size_panorama"]
-        if is_panorama
+        if is_panorama and not cubemap_extraction
         else config["feature_process_size"]
     )
     features_count = (
         config["feature_min_frames_panorama"]
-        if is_panorama
+        if is_panorama and not cubemap_extraction
         else config["feature_min_frames"]
     )
 
@@ -600,12 +605,25 @@ def extract_features(
     else:
         image_gray = image
 
-    if is_panorama:
-        print('this is a panorama image')
-        subshot_width = int(extraction_size/4)
-        sub_images = generate_perspective_images_of_a_panorama(image_gray, subshot_width, cv2.INTER_AREA)
-
     feature_type = config["feature_type"].upper()
+
+    if is_panorama and cubemap_extraction:
+        subshot_width = int(extraction_size/2)
+        sub_images = generate_perspective_images_of_a_panorama(image_gray, subshot_width, cv2.INTER_AREA)
+        import os
+        import sys
+        from opensfm.io import imwrite
+        imwrite("/tmp/spherical.png", image_gray)
+        rid = 0
+        for sub_shot, sub_image in sub_images.items():
+            print( f"rid {rid}: {sub_shot.id}: {sub_shot.camera.width} x {sub_shot.camera.height}" )
+            rid += 1
+            print( 'rendering done' )
+            imwrite(os.path.join("/tmp/", sub_shot.id), sub_image)
+            print( 'saving done')
+        print( 'finished')
+        sys.exit(1)
+
     if feature_type == "SIFT":
         points, desc = extract_features_sift(image_gray, config, features_count)
     elif feature_type == "SURF":
