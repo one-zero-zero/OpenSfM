@@ -1,6 +1,6 @@
 import itertools
 import logging
-from typing import Iterator, List, Dict, Optional
+from typing import Iterator, List, Dict, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -435,7 +435,7 @@ def add_pano_subshot_tracks(
 def generate_perspective_images_of_a_panorama(
     pano_image: np.ndarray,
     width: int ,
-    interpolation=cv2.INTER_LINEAR ) -> Dict[pymap.Shot, np.ndarray]:
+    interpolation=cv2.INTER_LINEAR ) -> Tuple[ Dict[pymap.Shot, np.ndarray], pymap.Shot ]:
 
     mint = cv2.INTER_LINEAR if interpolation == cv2.INTER_AREA else interpolation
 
@@ -455,4 +455,4 @@ def generate_perspective_images_of_a_panorama(
         undistorted = render_perspective_view_of_a_panorama(
                     pano_image, pano_shot, undistorted_shot, mint)
         images[undistorted_shot] = undistorted
-    return images
+    return images, pano_shot

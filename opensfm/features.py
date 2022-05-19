@@ -575,6 +575,18 @@ def run_feature_extractor(
         )
     return points, desc
 
+def transform_from_perspective_to_panorama(perspective_shot, panorama_shot, point_in_perspective):
+    npc = normalized_image_coordinates(point_in_perspective, perspective_shot.camera.width, perspective_shot.camera.height)
+    bearing = perspective_shot.camera.pixel_bearing_many(npc)
+    rotation = np.dot(
+        panorama_shot.pose.get_rotation_matrix(),
+        perspective_shot.pose.get_rotation_matrix().T
+    )
+    rotated_bearing = np.dot(bearing, rotation.T)
+    pp = panorama_shot.camera.project_many(rotated_bearing)
+    dc = denormalized_image_coordinates(pp, panorama_shot.camera.width, panorama_shot.camera.height)
+    return dc
+
 def extract_features(
     image: np.ndarray, config: Dict[str, Any], is_panorama: bool
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -603,7 +615,7 @@ def extract_features(
     cubemap_extraction = False
     if is_panorama:
         cubemap_extraction = config["feature_extract_from_cubemap_panorama"]
-        print( 'cubemap based feature extraction enabled')
+        logger.debug('cubemap based feature extraction enabled')
 
     extraction_size = (
         config["feature_process_size_panorama"]
@@ -626,24 +638,24 @@ def extract_features(
     else:
         image_gray = image
 
+    points = np.ndarray([])
+    desc = np.ndarray([])
     if is_panorama and cubemap_extraction:
         subshot_width = int(extraction_size/2)
-        sub_images = generate_perspective_images_of_a_panorama(image_gray, subshot_width, cv2.INTER_AREA)
-        import os
-        import sys
-        from opensfm.io import imwrite
-        imwrite("/tmp/spherical.png", image_gray)
-        rid = 0
+        sub_images, pano_shot = generate_perspective_images_of_a_panorama(image_gray, subshot_width, cv2.INTER_AREA)
         for sub_shot, sub_image in sub_images.items():
-            print( f"rid {rid}: {sub_shot.id}: {sub_shot.camera.width} x {sub_shot.camera.height}" )
-            rid += 1
-            print( 'rendering done' )
-            imwrite(os.path.join("/tmp/", sub_shot.id), sub_image)
-            print( 'saving done')
-        print( 'finished')
-        sys.exit(1)
-
-    points, desc = run_feature_extractor(image_gray, config, features_count)
+            sub_points, sub_descs = run_feature_extractor(sub_image, config, features_count)
+            pano_points = transform_from_perspective_to_panorama(sub_shot, pano_shot, sub_points)
+            sub_points[:,0] = pano_points[:,0]
+            sub_points[:,1] = pano_points[:,1]
+            if points.shape == ():
+                points = sub_points
+                desc   = sub_descs
+            else:
+                points = np.concatenate((points, sub_points))
+                desc   = np.concatenate((desc,   sub_descs))
+    else:
+        points, desc = run_feature_extractor(image_gray, config, features_count)
 
     xs = points[:, 0].round().astype(int)
     ys = points[:, 1].round().astype(int)
