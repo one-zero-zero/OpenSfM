@@ -572,6 +572,7 @@ def match(
     # Run descriptor matching
     time_start = timer()
     if guided_matching_pose:
+        logger.debug("Running Guided Matching")
         p1, p2, matches, matcher_type = _match_descriptors_guided_impl(
             im1, im2, camera1, camera2, guided_matching_pose, data, overriden_config
         )
@@ -580,6 +581,7 @@ def match(
             im1, im2, camera1, camera2, data, overriden_config
         )
     time_2d_matching = timer() - time_start
+    logger.debug( f"Matching {im1} and {im2} - initial count: {len(matches)}" )
 
     symmetric = "symmetric" if overriden_config["symmetric_matching"] else "one-way"
     robust_matching_min_match = overriden_config["robust_matching_min_match"]
@@ -874,6 +876,7 @@ def robust_match_calibrated(
     b2 = camera2.pixel_bearing_many(p2)
 
     threshold = config["robust_matching_calib_threshold"]
+    logger.debug( f"robust match calibrated ransac threshold: {threshold}" )
     T = multiview.relative_pose_ransac(b1, b2, threshold, 1000, 0.999)
 
     for relax in [4, 2, 1]:

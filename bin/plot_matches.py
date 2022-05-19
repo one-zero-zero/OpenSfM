@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+import sys
+from os.path import abspath, join, dirname
+
+sys.path.insert(0, abspath(join(dirname(__file__), "..")))
 
 import argparse
 import os.path
@@ -115,7 +119,7 @@ def plot_matches_for_images(data, image, images) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Plot matches between images")
-    parser.add_argument("dataset", help="path to the dataset to be processed")
+    parser.add_argument("--dataset", help="path to the dataset to be processed")
     parser.add_argument("--image", help="show tracks for a specific")
     parser.add_argument(
         "--images", help="show tracks between a subset of images (separated by commas)"
