@@ -553,6 +553,27 @@ def extract_features_orb(
     logger.debug("Found {0} points in {1}s".format(len(points), time.time() - t))
     return points, desc
 
+def run_feature_extractor(
+    image_gray: np.ndarray,
+    config: Dict[str, Any],
+    features_count: int ) -> Tuple[np.ndarray, np.ndarray]:
+
+    feature_type = config["feature_type"].upper()
+    if feature_type == "SIFT":
+        points, desc = extract_features_sift(image_gray, config, features_count)
+    elif feature_type == "SURF":
+        points, desc = extract_features_surf(image_gray, config, features_count)
+    elif feature_type == "AKAZE":
+        points, desc = extract_features_akaze(image_gray, config, features_count)
+    elif feature_type == "HAHOG":
+        points, desc = extract_features_hahog(image_gray, config, features_count)
+    elif feature_type == "ORB":
+        points, desc = extract_features_orb(image_gray, config, features_count)
+    else:
+        raise ValueError(
+            "Unknown feature type " "(must be SURF, SIFT, AKAZE, HAHOG or ORB)"
+        )
+    return points, desc
 
 def extract_features(
     image: np.ndarray, config: Dict[str, Any], is_panorama: bool
@@ -605,8 +626,6 @@ def extract_features(
     else:
         image_gray = image
 
-    feature_type = config["feature_type"].upper()
-
     if is_panorama and cubemap_extraction:
         subshot_width = int(extraction_size/2)
         sub_images = generate_perspective_images_of_a_panorama(image_gray, subshot_width, cv2.INTER_AREA)
@@ -624,20 +643,7 @@ def extract_features(
         print( 'finished')
         sys.exit(1)
 
-    if feature_type == "SIFT":
-        points, desc = extract_features_sift(image_gray, config, features_count)
-    elif feature_type == "SURF":
-        points, desc = extract_features_surf(image_gray, config, features_count)
-    elif feature_type == "AKAZE":
-        points, desc = extract_features_akaze(image_gray, config, features_count)
-    elif feature_type == "HAHOG":
-        points, desc = extract_features_hahog(image_gray, config, features_count)
-    elif feature_type == "ORB":
-        points, desc = extract_features_orb(image_gray, config, features_count)
-    else:
-        raise ValueError(
-            "Unknown feature type " "(must be SURF, SIFT, AKAZE, HAHOG or ORB)"
-        )
+    points, desc = run_feature_extractor(image_gray, config, features_count)
 
     xs = points[:, 0].round().astype(int)
     ys = points[:, 1].round().astype(int)
