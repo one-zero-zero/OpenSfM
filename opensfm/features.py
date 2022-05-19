@@ -641,7 +641,7 @@ def extract_features(
     points = np.ndarray([])
     desc = np.ndarray([])
     if is_panorama and cubemap_extraction:
-        subshot_width = int(extraction_size/2)
+        subshot_width = extraction_size
         sub_images, pano_shot = generate_perspective_images_of_a_panorama(image_gray, subshot_width, cv2.INTER_AREA)
         for sub_shot, sub_image in sub_images.items():
             sub_points, sub_descs = run_feature_extractor(sub_image, config, features_count)

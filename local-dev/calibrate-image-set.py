@@ -57,6 +57,9 @@ if __name__ == '__main__':
         "depthmap_resolution": 800,
         "depthmap_num_matching_views": 8,
         "align_method": "naive",
+        "feature_extract_from_cubemap_panorama": True,
+        "feature_min_frames": 2000,
+        "feature_process_size": 2048
     }
     write_yaml_file(config_file, config_data)
     print("\n")
