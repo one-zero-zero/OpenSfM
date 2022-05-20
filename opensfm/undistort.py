@@ -295,6 +295,7 @@ def perspective_views_of_a_panorama(
     reconstruction: types.Reconstruction,
     image_format: str,
     rig_instance_count: Iterator[int],
+    R: Optional[np.ndarray] = None # optionally rotates the panorama texture
 ) -> List[pymap.Shot]:
     """Create 6 perspective views of a panorama."""
     camera = pygeometry.Camera.create_perspective(0.5, 0.0, 0.0)
@@ -321,7 +322,11 @@ def perspective_views_of_a_panorama(
     for name, rotation in zip(names, rotations):
         if name not in reconstruction.rig_cameras:
             rig_camera_pose = pygeometry.Pose()
-            rig_camera_pose.set_rotation_matrix(rotation[:3, :3])
+            if R is not None:
+                rot = np.dot(R, rotation[:3, :3])
+                rig_camera_pose.set_rotation_matrix(rot)
+            else:
+                rig_camera_pose.set_rotation_matrix(rotation[:3, :3])
             rig_camera = pymap.RigCamera(rig_camera_pose, name)
             reconstruction.add_rig_camera(rig_camera)
         rig_camera = reconstruction.rig_cameras[name]
@@ -435,7 +440,9 @@ def add_pano_subshot_tracks(
 def generate_perspective_images_of_a_panorama(
     pano_image: np.ndarray,
     width: int ,
-    interpolation=cv2.INTER_LINEAR ) -> Tuple[ Dict[pymap.Shot, np.ndarray], pymap.Shot ]:
+    interpolation=cv2.INTER_LINEAR,
+    R: Optional[np.ndarray] = None
+    ) -> Tuple[ Dict[pymap.Shot, np.ndarray], pymap.Shot ]:
 
     mint = cv2.INTER_LINEAR if interpolation == cv2.INTER_AREA else interpolation
 
@@ -448,7 +455,7 @@ def generate_perspective_images_of_a_panorama(
     pano_shot = trec.create_pano_shot("panoramic_shot", pano_camera.id)
     rig_instance_count = itertools.count()
 
-    shots = perspective_views_of_a_panorama(pano_shot, width, trec, 'png', rig_instance_count)
+    shots = perspective_views_of_a_panorama(pano_shot, width, trec, 'png', rig_instance_count, R)
 
     images = {}
     for undistorted_shot in shots:
