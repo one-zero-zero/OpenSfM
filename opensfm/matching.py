@@ -580,15 +580,14 @@ def match(
             im1, im2, camera1, camera2, data, overriden_config
         )
     time_2d_matching = timer() - time_start
-    logger.debug( f"Matching {im1} and {im2} - initial count: {len(matches)}" )
 
     symmetric = "symmetric" if overriden_config["symmetric_matching"] else "one-way"
     robust_matching_min_match = overriden_config["robust_matching_min_match"]
     if len(matches) < robust_matching_min_match:
         logger.debug(
-            "Matching {} and {}.  Matcher: {} ({}) T-desc: {:1.3f} "
+            "Matching {} and {}.  Matcher: {} ({}) #matches: {} (threshold {})  T-desc: {:1.3f} "
             "Matches: FAILED".format(
-                im1, im2, matcher_type, symmetric, time_2d_matching
+                im1, im2, matcher_type, symmetric, len(matches), robust_matching_min_match, time_2d_matching
             )
         )
         return np.array([])
