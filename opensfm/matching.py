@@ -585,9 +585,9 @@ def match(
     robust_matching_min_match = overriden_config["robust_matching_min_match"]
     if len(matches) < robust_matching_min_match:
         logger.debug(
-            "Matching {} and {}.  Matcher: {} ({}) T-desc: {:1.3f} "
+            "Matching {} and {}.  Matcher: {} ({}) #matches: {} (threshold {})  T-desc: {:1.3f} "
             "Matches: FAILED".format(
-                im1, im2, matcher_type, symmetric, time_2d_matching
+                im1, im2, matcher_type, symmetric, len(matches), robust_matching_min_match, time_2d_matching
             )
         )
         return np.array([])
@@ -874,6 +874,16 @@ def robust_match_calibrated(
     b2 = camera2.pixel_bearing_many(p2)
 
     threshold = config["robust_matching_calib_threshold"]
+    if (
+        camera1.projection_type in ["perspective", "brown"]
+        and camera1.projection_type == camera2.projection_type
+        and camera1.k1 == camera2.k1
+        and camera1.k2 == camera2.k2
+        and config["robust_matching_calib_threshold_same_camera"] > 0.0
+    ):
+        threshold = config["robust_matching_calib_threshold_same_camera"]
+
+    logger.debug( f"robust match calibrated ransac threshold: {threshold}" )
     T = multiview.relative_pose_ransac(b1, b2, threshold, 1000, 0.999)
 
     for relax in [4, 2, 1]:

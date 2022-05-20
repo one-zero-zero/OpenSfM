@@ -6,7 +6,7 @@ from typing import Tuple, Dict, Any, List, Optional
 
 import cv2
 import numpy as np
-from opensfm import context, pyfeatures
+from opensfm import context, pyfeatures, geometry
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -611,20 +611,16 @@ def extract_features(
         - colors: the color of the center of each feature
     """
     from opensfm.undistort import generate_perspective_images_of_a_panorama
-
-    cubemap_extraction = False
-    if is_panorama:
-        cubemap_extraction = config["feature_extract_from_cubemap_panorama"]
-        logger.debug('cubemap based feature extraction enabled')
+    from opensfm.io import imwrite
 
     extraction_size = (
         config["feature_process_size_panorama"]
-        if is_panorama and not cubemap_extraction
+        if is_panorama
         else config["feature_process_size"]
     )
     features_count = (
         config["feature_min_frames_panorama"]
-        if is_panorama and not cubemap_extraction
+        if is_panorama
         else config["feature_min_frames"]
     )
 
@@ -640,8 +636,10 @@ def extract_features(
 
     points = np.ndarray([])
     desc = np.ndarray([])
-    if is_panorama and cubemap_extraction:
+    if is_panorama and config["feature_extract_from_cubemap_panorama"]:
+        logger.debug('cubemap based feature extraction enabled')
         subshot_width = extraction_size
+        # default pose
         sub_images, pano_shot = generate_perspective_images_of_a_panorama(image_gray, subshot_width, cv2.INTER_AREA)
         for sub_shot, sub_image in sub_images.items():
             sub_points, sub_descs = run_feature_extractor(sub_image, config, features_count)
@@ -654,6 +652,21 @@ def extract_features(
             else:
                 points = np.concatenate((points, sub_points))
                 desc   = np.concatenate((desc,   sub_descs))
+        if config["feature_extract_from_cubemap_augmented"]:
+            # rotate parorama around x and y by 45 degrees
+            R = geometry.rotation_from_ptr( np.pi/4, np.pi/4, 0.0 )
+            sub_images, pano_shot = generate_perspective_images_of_a_panorama(image_gray, subshot_width, cv2.INTER_AREA, R)
+            for sub_shot, sub_image in sub_images.items():
+                sub_points, sub_descs = run_feature_extractor(sub_image, config, features_count)
+                pano_points = transform_from_perspective_to_panorama(sub_shot, pano_shot, sub_points)
+                sub_points[:,0] = pano_points[:,0]
+                sub_points[:,1] = pano_points[:,1]
+                if points.shape == ():
+                    points = sub_points
+                    desc   = sub_descs
+                else:
+                    points = np.concatenate((points, sub_points))
+                    desc   = np.concatenate((desc,   sub_descs))
     else:
         points, desc = run_feature_extractor(image_gray, config, features_count)
 
