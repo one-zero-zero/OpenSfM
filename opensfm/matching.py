@@ -572,7 +572,6 @@ def match(
     # Run descriptor matching
     time_start = timer()
     if guided_matching_pose:
-        logger.debug("Running Guided Matching")
         p1, p2, matches, matcher_type = _match_descriptors_guided_impl(
             im1, im2, camera1, camera2, guided_matching_pose, data, overriden_config
         )
