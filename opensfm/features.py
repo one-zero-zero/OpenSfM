@@ -639,7 +639,7 @@ def extract_features(
     else:
         image_gray = image
 
-    save_debug_frames = False
+    save_debug_frames = config["feature_extract_save_debug_images"]
 
     points = np.ndarray([])
     desc = np.ndarray([])
@@ -705,7 +705,7 @@ def extract_features(
                     points = np.concatenate((points, sub_points))
                     desc   = np.concatenate((desc,   sub_descs))
             if save_debug_frames:
-                imwrite("/tmp/augmented"+str(frame_count)+".jpg",rgb)
+                imwrite("/tmp/features"+str(frame_count)+".jpg", rgb )
     else:
         points, desc = run_feature_extractor(image_gray, config, features_count)
 
