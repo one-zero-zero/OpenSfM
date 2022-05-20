@@ -35,6 +35,8 @@ class OpenSfMConfig:
     features_bake_segmentation: bool = False
     # compute the cubemap images from the panorama and extract the features from the cubemap textures for panorama.
     feature_extract_from_cubemap_panorama: bool = False
+    # rotates the panorama around x and y axes by 45 degrees and augments the extracted features. needs feature_extract_from_cubemap_panorama: True to be enabled
+    feature_extract_from_cubemap_augmented: bool = False
 
     ##################################
     # Params for SIFT
