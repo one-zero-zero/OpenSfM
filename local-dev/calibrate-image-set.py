@@ -49,17 +49,27 @@ if __name__ == '__main__':
     config_file = os.path.join(dataset_folder,"config.yaml")
     config_data = {
         "processes": num_cpus(),
-        "matching_gps_distance": 0,
-        "matching_gps_neighbors": 0,
-        "matching_vlad_neighbors": 20,
-        "matching_use_filters": True,
-        "undistorted_image_max_size": 8400000,
-        "depthmap_resolution": 800,
-        "depthmap_num_matching_views": 8,
         "align_method": "naive",
+        "feature_type": "AKAZE",
         "feature_extract_from_cubemap_panorama": True,
         "feature_min_frames": 2000,
-        "feature_process_size": 2048
+        "feature_process_size": 2048,
+        "feature_min_frames_panorama": 2048,
+        "feature_process_size_panorama": 2048,
+        "matching_gps_distance": 0,
+        "matching_gps_neighbors": 0,
+        "matching_use_filters": False,
+        "matching_vlad_neighbors": 20,
+        "undistorted_image_max_size": 8400000,
+        "matcher_type": "FLANN",
+        "robust_matching_calib_threshold_same_camera": 0.004,
+        "robust_matching_calib_threshold": 0.015,
+        "robust_matching_threshold": 0.004,
+        "five_point_algo_threshold": 0.004,
+        "depthmap_num_matching_views": 8,
+        "depthmap_resolution": 800,
+        "robust_matching_min_match": 15,
+        "lowes_ratio": 0.9
     }
     write_yaml_file(config_file, config_data)
     print("\n")
