@@ -53,7 +53,6 @@ if __name__ == '__main__':
         "feature_type": "AKAZE",
         "feature_extract_from_cubemap_panorama": True,
         "feature_extract_from_cubemap_augmented": True,
-        "feature_extract_save_debug_images": False,
         "feature_min_frames": 2000,
         "feature_process_size": 4096,
         "feature_min_frames_panorama": 2048,
@@ -71,7 +70,9 @@ if __name__ == '__main__':
         "depthmap_num_matching_views": 8,
         "depthmap_resolution": 800,
         "robust_matching_min_match": 15,
-        "lowes_ratio": 0.9
+        "lowes_ratio": 0.9,
+        "reprojection_error_sd": 0.015,
+        "bundle_outlier_fixed_threshold": 0.02
     }
     write_yaml_file(config_file, config_data)
     print("\n")
