@@ -619,12 +619,12 @@ def extract_features(
 
     extraction_size = (
         config["feature_process_size_panorama"]
-        if is_panorama and not cubemap_extraction
+        if is_panorama
         else config["feature_process_size"]
     )
     features_count = (
         config["feature_min_frames_panorama"]
-        if is_panorama and not cubemap_extraction
+        if is_panorama
         else config["feature_min_frames"]
     )
 
@@ -641,18 +641,10 @@ def extract_features(
     points = np.ndarray([])
     desc = np.ndarray([])
     if is_panorama and cubemap_extraction:
-        subshot_width = extraction_size//2
+        subshot_width = extraction_size
         sub_images, pano_shot = generate_perspective_images_of_a_panorama(image_gray, subshot_width, cv2.INTER_AREA)
         for sub_shot, sub_image in sub_images.items():
             sub_points, sub_descs = run_feature_extractor(sub_image, config, features_count)
-
-            from opensfm.io import imwrite
-            xs = sub_points[:, 0].round().astype(int)
-            ys = sub_points[:, 1].round().astype(int)
-            sub_rgb = cv2.cvtColor(sub_image, cv2.COLOR_GRAY2RGB)
-            sub_rgb[ys, xs] = [255, 0, 0]
-            imwrite("/tmp/"+sub_shot.id+".png", sub_rgb)
-
             pano_points = transform_from_perspective_to_panorama(sub_shot, pano_shot, sub_points)
             sub_points[:,0] = pano_points[:,0]
             sub_points[:,1] = pano_points[:,1]
@@ -664,12 +656,6 @@ def extract_features(
                 desc   = np.concatenate((desc,   sub_descs))
     else:
         points, desc = run_feature_extractor(image_gray, config, features_count)
-        from opensfm.io import imwrite
-        xs = points[:, 0].round().astype(int)
-        ys = points[:, 1].round().astype(int)
-        rgb = cv2.cvtColor(image_gray, cv2.COLOR_GRAY2RGB)
-        rgb[ys, xs] = [255, 0, 0]
-        imwrite("/tmp/out.png", rgb)
 
     xs = points[:, 0].round().astype(int)
     ys = points[:, 1].round().astype(int)
