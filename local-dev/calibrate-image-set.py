@@ -49,7 +49,6 @@ if __name__ == '__main__':
     config_file = os.path.join(dataset_folder,"config.yaml")
     config_data = {
         "processes": num_cpus(),
-        "default_projection_type": "brown",
         "unknown_camera_models_are_different": True,
         "align_method": "naive",
         "feature_type": "AKAZE",

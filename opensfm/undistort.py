@@ -150,6 +150,17 @@ def undistort_image_and_masks(arguments) -> None:
         for k, v in undistorted.items():
             udata.save_undistorted_segmentation(k, v)
 
+def undistort_image_from_camera(
+    distorted_camera: pygeometry.Camera,
+    undistorted_camera: pygeometry.Camera,
+    original_image: np.ndarray
+) -> np.ndarray:
+    height, width = original_image.shape[:2]
+    map1, map2 = pygeometry.compute_camera_mapping(
+        distorted_camera, undistorted_camera, width, height
+    )
+    undistorted = cv2.remap(original_image, map1, map2, cv2.INTER_AREA)
+    return undistorted
 
 def undistort_image(
     shot: pymap.Shot,

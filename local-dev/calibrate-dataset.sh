@@ -28,6 +28,11 @@ then
     mkdir -p "${dataset_folder}/reports/pano-images/"
 fi
 
+if [ ! -d "${dataset_folder}/reports/undistorted/" ]
+then
+    mkdir -p "${dataset_folder}/reports/undistorted/"
+fi
+
 docker run \
     -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro --user $(id -u):$(id -g) \
     -v "${dataset_folder}"/:/external/in \

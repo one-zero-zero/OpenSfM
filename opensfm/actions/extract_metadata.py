@@ -1,3 +1,4 @@
+from cmath import log
 import copy
 import logging
 from functools import partial
@@ -47,6 +48,24 @@ def run_dataset(data: DataSetBase) -> None:
                 camera_models[key] = value
     data.save_camera_models(camera_models)
 
+    from opensfm.undistort import perspective_camera_from_brown
+    from opensfm.undistort import undistort_image_from_camera
+    from opensfm.io import imwrite
+    for image in data.images():
+        im_exif = data.load_exif(image)
+        im_camera = camera_models[ im_exif["camera"] ]
+        if im_camera.projection_type == "brown":
+            logging.info(f"Undistorting image {image}")
+            logging.info( f"{image} : projection_type: {im_camera.projection_type} : focal {im_camera.focal}" )
+            img = data.load_image(image)
+            u_cam = perspective_camera_from_brown(im_camera)
+            logging.info( f"{image} : projection_type: {u_cam.projection_type}: focal {u_cam.focal}" )
+            u_img = undistort_image_from_camera(im_camera, u_cam, img)
+            fname = './reports/undistorted/' + image
+            logging.info(f"Undistorting image {image} - saving")
+            imwrite(fname, u_img)
+            fname = './reports/undistorted/raw-' + image
+            imwrite(fname, img)
 
 def _extract_exif(image: str, data: DataSetBase) -> Dict[str, Any]:
     with data.open_image_file(image) as fp:

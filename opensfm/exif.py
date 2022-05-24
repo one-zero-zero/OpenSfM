@@ -224,7 +224,7 @@ class EXIF:
 
     def extract_projection_type(self) -> str:
         gpano = get_gpano_from_xmp(self.xmp)
-        return gpano.get("GPano:ProjectionType", "perspective")
+        return gpano.get("GPano:ProjectionType", "brown")
 
     def extract_focal(self) -> Tuple[float, float]:
         make, model = self.extract_make(), self.extract_model()
