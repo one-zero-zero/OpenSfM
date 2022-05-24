@@ -587,6 +587,20 @@ def transform_from_perspective_to_panorama(perspective_shot, panorama_shot, poin
     dc = denormalized_image_coordinates(pp, panorama_shot.camera.width, panorama_shot.camera.height)
     return dc
 
+import threading
+class FrameCounter(object):
+    def __init__(self):
+        self.value = 0
+        self._lock = threading.Lock()
+
+    def increment(self) -> int:
+        tval = 0
+        with self._lock:
+            tval = self.value
+            self.value += 1
+        return tval
+frame_counter = FrameCounter()
+
 def extract_features(
     image: np.ndarray, config: Dict[str, Any], is_panorama: bool
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -611,6 +625,7 @@ def extract_features(
         - colors: the color of the center of each feature
     """
     from opensfm.undistort import generate_perspective_images_of_a_panorama
+    from opensfm.undistort import generate_front_back_images_of_a_panorama
     from opensfm.io import imwrite
 
     extraction_size = (
@@ -634,11 +649,20 @@ def extract_features(
     else:
         image_gray = image
 
+    fid = frame_counter.increment()
+
     points = np.ndarray([])
     desc = np.ndarray([])
     if is_panorama and config["feature_extract_from_cubemap_panorama"]:
         logger.debug('cubemap based feature extraction enabled')
         subshot_width = extraction_size
+
+        if config["save_front_back_wide_fov"]:
+            # front/back large fov images
+            fb_images, p_shot = generate_front_back_images_of_a_panorama(config, image, subshot_width, cv2.INTER_AREA)
+            for pshot, pimg in fb_images.items():
+                imwrite("./reports/pano-images/frame-"+str(fid)+"-"+pshot.id+".jpg", pimg)
+
         # default pose
         sub_images, pano_shot = generate_perspective_images_of_a_panorama(image_gray, subshot_width, cv2.INTER_AREA)
         for sub_shot, sub_image in sub_images.items():

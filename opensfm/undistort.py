@@ -1,6 +1,6 @@
 import itertools
 import logging
-from typing import Iterator, List, Dict, Optional, Tuple
+from typing import Iterator, List, Dict, Any, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -288,6 +288,57 @@ def perspective_camera_from_fisheye62(
     camera.height = fisheye62.height
     return camera
 
+def front_back_views_of_a_panorama(
+    config: Dict[str, Any],
+    spherical_shot: pymap.Shot,
+    width: int,
+    reconstruction: types.Reconstruction,
+    image_format: str,
+    rig_instance_count: Iterator[int],
+    R: Optional[np.ndarray] = None # optionally rotates the panorama texture
+) -> List[pymap.Shot]:
+    """Create 2 perspective front & back views of a panorama."""
+    fov_in_degrees = config["save_front_back_wide_fov_angle"]
+    focal = 0.5 / np.tan(fov_in_degrees/2.0/180.0*np.pi)
+    camera = pygeometry.Camera.create_perspective(focal, 0.0, 0.0)
+    camera.id = "perspective_panorama_camera"
+    camera.width = width
+    camera.height = width
+    reconstruction.add_camera(camera)
+
+    names = ["front", "back"]
+    rotations = [
+        tf.rotation_matrix(-0 * np.pi / 2, np.array([0, 1, 0])),
+        tf.rotation_matrix(-2 * np.pi / 2, np.array([0, 1, 0])),
+    ]
+
+    rig_instance = reconstruction.add_rig_instance(
+        pymap.RigInstance(str(next(rig_instance_count)))
+    )
+
+    shots = []
+    for name, rotation in zip(names, rotations):
+        if name not in reconstruction.rig_cameras:
+            rig_camera_pose = pygeometry.Pose()
+            if R is not None:
+                rot = np.dot(R, rotation[:3, :3])
+                rig_camera_pose.set_rotation_matrix(rot)
+            else:
+                rig_camera_pose.set_rotation_matrix(rotation[:3, :3])
+            rig_camera = pymap.RigCamera(rig_camera_pose, name)
+            reconstruction.add_rig_camera(rig_camera)
+        rig_camera = reconstruction.rig_cameras[name]
+
+        shot_id =  name
+        shot = reconstruction.create_shot(
+            shot_id, camera.id, pygeometry.Pose(), rig_camera.id, rig_instance.id
+        )
+        shot.metadata = spherical_shot.metadata
+        shots.append(shot)
+    rig_instance.pose = spherical_shot.pose
+
+    return shots
+
 
 def perspective_views_of_a_panorama(
     spherical_shot: pymap.Shot,
@@ -456,6 +507,35 @@ def generate_perspective_images_of_a_panorama(
     rig_instance_count = itertools.count()
 
     shots = perspective_views_of_a_panorama(pano_shot, width, trec, 'png', rig_instance_count, R)
+
+    images = {}
+    for undistorted_shot in shots:
+        undistorted = render_perspective_view_of_a_panorama(
+                    pano_image, pano_shot, undistorted_shot, mint)
+        images[undistorted_shot] = undistorted
+    return images, pano_shot
+
+
+def generate_front_back_images_of_a_panorama(
+    config: Dict[str, Any],
+    pano_image: np.ndarray,
+    width: int ,
+    interpolation=cv2.INTER_LINEAR,
+    R: Optional[np.ndarray] = None
+    ) -> Tuple[ Dict[pymap.Shot, np.ndarray], pymap.Shot ]:
+
+    mint = cv2.INTER_LINEAR if interpolation == cv2.INTER_AREA else interpolation
+
+    trec = types.Reconstruction()
+    pano_camera = pygeometry.Camera.create_spherical()
+    pano_camera.id = "generic_panoramic_camera"
+    pano_camera.height = pano_image.shape[0]
+    pano_camera.width = pano_image.shape[1]
+    trec.add_camera(pano_camera)
+    pano_shot = trec.create_pano_shot("panoramic_shot", pano_camera.id)
+    rig_instance_count = itertools.count()
+
+    shots = front_back_views_of_a_panorama(config, pano_shot, width, trec, 'png', rig_instance_count, R)
 
     images = {}
     for undistorted_shot in shots:

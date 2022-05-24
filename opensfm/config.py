@@ -37,6 +37,9 @@ class OpenSfMConfig:
     feature_extract_from_cubemap_panorama: bool = False
     # rotates the panorama around x and y axes by 45 degrees and augments the extracted features. needs feature_extract_from_cubemap_panorama: True to be enabled
     feature_extract_from_cubemap_augmented: bool = False
+    # save front and back fov images for panoramas
+    save_front_back_wide_fov: bool = False
+    save_front_back_wide_fov_angle: int = 120
 
     ##################################
     # Params for SIFT
