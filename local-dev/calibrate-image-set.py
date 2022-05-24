@@ -53,6 +53,8 @@ if __name__ == '__main__':
         "feature_type": "AKAZE",
         "feature_extract_from_cubemap_panorama": True,
         "feature_extract_from_cubemap_augmented": True,
+        "save_front_back_wide_fov": True,
+        "save_front_back_wide_fov_angle": 120,
         "feature_min_frames": 2000,
         "feature_process_size": 4096,
         "feature_min_frames_panorama": 2048,
@@ -64,15 +66,15 @@ if __name__ == '__main__':
         "undistorted_image_max_size": 8400000,
         "matcher_type": "FLANN",
         "robust_matching_calib_threshold_same_camera": 0.004,
-        "robust_matching_calib_threshold": 0.015,
+        "robust_matching_calib_threshold": 0.03,
         "robust_matching_threshold": 0.004,
         "five_point_algo_threshold": 0.004,
         "depthmap_num_matching_views": 8,
         "depthmap_resolution": 800,
         "robust_matching_min_match": 15,
-        "lowes_ratio": 0.9,
+        "lowes_ratio": 0.85,
         "reprojection_error_sd": 0.015,
-        "bundle_outlier_fixed_threshold": 0.02
+        "bundle_outlier_fixed_threshold": 0.015
     }
     write_yaml_file(config_file, config_data)
     print("\n")

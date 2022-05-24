@@ -18,9 +18,14 @@ if [ ! -d "${dataset_folder}/images" ]; then
     exit 1
 fi
 
-if [ ! -d ${dataset_folder} ]
+if [ ! -d "${dataset_folder}" ]
 then
     mkdir -p "${dataset_folder}"
+fi
+
+if [ ! -d "${dataset_folder}/reports/pano-images/" ]
+then
+    mkdir -p "${dataset_folder}/reports/pano-images/"
 fi
 
 docker run \
