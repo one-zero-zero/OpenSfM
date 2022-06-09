@@ -95,6 +95,15 @@ if __name__ == "__main__":
     corr_dict = {}
     for vs in match_dict['allCorrespondences'].items():
 
+        if not 'frame' in vs[1]:
+            continue
+
+        if not 'others' in vs[1]:
+            continue
+
+        if vs[1]['others'] == None:
+            continue
+
         fname = vs[1]['frame']['frame']
         fx = vs[1]['frame']['x']
         fy = vs[1]['frame']['y']
@@ -108,15 +117,15 @@ if __name__ == "__main__":
             obs_y = fy
             trk_x = ox
             trk_y = oy
-            imtag = os.path.basename(fname)
-            cname = os.path.basename(oname)
+            imtag = os.path.basename(fname).replace('_features.png','')
+            cname = os.path.basename(oname).replace('_features.png','')
         else:
             obs_x = ox
             obs_y = oy
             trk_x = fx
             trk_y = fy
-            imtag = os.path.basename(oname)
-            cname = os.path.basename(fname)
+            imtag = os.path.basename(oname).replace('_features.png','')
+            cname = os.path.basename(fname).replace('_features.png','')
 
         trk_id = find_track_id(data, recon, tracks_manager, cname, trk_x, trk_y, dth)
         if trk_id == None:
