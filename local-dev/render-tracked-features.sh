@@ -31,4 +31,4 @@ fi
 docker run \
     -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro --user $(id -u):$(id -g) \
     -v "${dataset_folder}"/:/external/in \
-    -it --rm calibration_docker python3 /source/OpenSfM/bin/render_features.py --dataset /external/in/ --images
+    -it --rm opensfm-local python3 /source/OpenSfM/bin/render_features.py --dataset /external/in/ --images
