@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from genericpath import isdir
 import sys
 import os
 from os.path import abspath, join, dirname, isfile
@@ -30,24 +31,22 @@ def load_json_file(json_file):
         jdata = load_json(jdata, json.load(f))
     return jdata
 
-
 def find_track_id(data, recon, tracks_manager, image_name, x, y, dth):
 
     ixy  = np.empty((1, 2))
     ixy[:,0] = x
     ixy[:,1] = y
-
+    if not image_name in data.images():
+        print( f'WARNING: could not find image {image_name} in dataset' )
+        return None
     h, w = data.image_size(image_name)
 
     for track, obs in tracks_manager.get_shot_observations(image_name).items():
         if track in recon.points:
-            coord = recon.points[track].coordinates
-
             oxy  = np.empty((1, 2))
             oxy[:,0] = obs.point[0]
             oxy[:,1] = obs.point[1]
             oxy = features.denormalized_image_coordinates(oxy, w, h)
-
             idist = np.linalg.norm(oxy-ixy,ord=2)
             if idist < dth:
                 return track
@@ -128,15 +127,18 @@ if __name__ == "__main__":
 
     dataset_folder = args.dataset
 
-    if not isfile(args.geocalib):
-        print('geocalib file needs to be set')
-        sys.exit(1)
-
     geocalib_files = []
-    if isfile(args.geocalib):
-        geocalib_files.append(args.geocalib)
+    gcalib = os.path.join(dataset_folder, 'geocalib')
+    if args.geocalib:
+        gcalib = args.geocalib
+    if isfile(gcalib):
+        geocalib_files.append(gcalib)
     else:
-        geocalib_files = glob.glob(args.geocalib+"/*.cscn")
+        geocalib_files = glob.glob(gcalib+"/*.cscn")
+
+    if len(geocalib_files) == 0:
+        print( f'could not find any geocalib files under {gcalib}')
+        sys.exit(1)
 
     data = dataset.DataSet(args.dataset)
     tracks_manager = data.load_tracks_manager()
@@ -145,10 +147,6 @@ if __name__ == "__main__":
         recon = reconstructions[0]
     else:
         print('could not load reconstruction')
-
-    data = None
-    tracks_manager = None
-    recon = None
 
     if args.dth:
         dth = args.dth
@@ -161,7 +159,9 @@ if __name__ == "__main__":
         corr_dict = parse_geocalib_file(geo_file, data, recon, tracks_manager, corr_dict)
 
     for fkey in corr_dict:
-        jfile = dataset_folder + '/corrs-' + fkey + '.json'
+        if not isdir(dataset+'/geocalib'):
+            os.mkdir(dataset_folder+'/geocalib/')
+        jfile = dataset_folder + '/geocalib/' + fkey + '.json'
         jdata = {}
         jdata['corrs'] = corr_dict[fkey]
         save_json_file(jdata, jfile)

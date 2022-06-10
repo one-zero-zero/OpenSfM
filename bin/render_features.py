@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import os
 import sys
 from os.path import abspath, join, dirname, isdir
 from os import mkdir
@@ -7,9 +6,6 @@ from os import mkdir
 sys.path.insert(0, abspath(join(dirname(__file__), "..")))
 
 import argparse
-import numpy as np
-from numpy import ndarray
-
 import cv2
 
 from opensfm import dataset
