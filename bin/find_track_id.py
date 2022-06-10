@@ -3,7 +3,6 @@ import sys
 from os.path import abspath, join, dirname
 
 import numpy as np
-from numpy import ndarray
 
 sys.path.insert(0, abspath(join(dirname(__file__), "..")))
 
