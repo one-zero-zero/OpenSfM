@@ -3,9 +3,10 @@ import sys
 import os
 from os.path import abspath, join, dirname, isfile
 
-import numpy as np
-
 sys.path.insert(0, abspath(join(dirname(__file__), "..")))
+
+import numpy as np
+import glob
 
 from collections.abc import Mapping
 import json
@@ -14,7 +15,6 @@ import argparse
 
 from opensfm import dataset
 from opensfm import features
-
 
 def load_json(d, u):
     for k, v in u.items():
@@ -58,49 +58,18 @@ def save_json_file(dv, json_file):
         json.dump(dv,fp)
     return
 
+def parse_geocalib_file(geo_file, data, recon, tracks_manager, corr_dict):
 
-if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(description='Find track ID from point coordinate on image')
-    parser.add_argument('--dataset',
-                        help='path to the dataset to be processed')
-    parser.add_argument('--geocalib',
-                        help='geocalib generated file')
-    parser.add_argument('--dth',
-                        help='distance threshold for assigning tracks')
-
-    args = parser.parse_args()
-
-    if not isfile(args.geocalib):
-        print('geocalib file needs to be set')
-        sys.exit(1)
-
-    geo_file = args.geocalib
-
-    data = dataset.DataSet(args.dataset)
-    tracks_manager = data.load_tracks_manager()
-    reconstructions = data.load_reconstruction()
-    if len(reconstructions) > 0:
-        recon = reconstructions[0]
-    else:
-        print('could not load reconstruction')
-
-    if args.dth:
-        dth = args.dth
-    else:
-        dth = 3.0
+    print( f'parsing file {geo_file}')
 
     match_dict = load_json_file(geo_file)
 
-    corr_dict = {}
+    n_found = 0
     for vs in match_dict['allCorrespondences'].items():
-
         if not 'frame' in vs[1]:
             continue
-
         if not 'others' in vs[1]:
             continue
-
         if vs[1]['others'] == None:
             continue
 
@@ -131,6 +100,7 @@ if __name__ == "__main__":
         if trk_id == None:
             continue
 
+        n_found += 1
         coord = recon.points[trk_id].coordinates
 
         if imtag in corr_dict:
@@ -138,9 +108,60 @@ if __name__ == "__main__":
         else:
             corr_dict[ imtag ] = [ [obs_x, obs_y, coord[0], coord[1], coord[2]] ]
 
+    print( f'parsing file {geo_file}: found matches in file {len(match_dict["allCorrespondences"])} : Initialized {n_found} track-correspondences' )
+
+    return corr_dict
+
+
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description='Find track ID from point coordinate on image')
+    parser.add_argument('--dataset',
+                        help='path to the dataset to be processed')
+    parser.add_argument('--geocalib',
+                        help='geocalib generated file or folder')
+    parser.add_argument('--dth', type=float,
+                        help='distance threshold for assigning tracks', default=3)
+
+    args = parser.parse_args()
+
+    dataset_folder = args.dataset
+
+    if not isfile(args.geocalib):
+        print('geocalib file needs to be set')
+        sys.exit(1)
+
+    geocalib_files = []
+    if isfile(args.geocalib):
+        geocalib_files.append(args.geocalib)
+    else:
+        geocalib_files = glob.glob(args.geocalib+"/*.cscn")
+
+    data = dataset.DataSet(args.dataset)
+    tracks_manager = data.load_tracks_manager()
+    reconstructions = data.load_reconstruction()
+    if len(reconstructions) > 0:
+        recon = reconstructions[0]
+    else:
+        print('could not load reconstruction')
+
+    data = None
+    tracks_manager = None
+    recon = None
+
+    if args.dth:
+        dth = args.dth
+    else:
+        dth = 3.0
+
+    corr_dict = {}
+
+    for geo_file in geocalib_files:
+        corr_dict = parse_geocalib_file(geo_file, data, recon, tracks_manager, corr_dict)
 
     for fkey in corr_dict:
-        jfile = args.dataset + '/corrs-' + fkey + '.json'
+        jfile = dataset_folder + '/corrs-' + fkey + '.json'
         jdata = {}
         jdata['corrs'] = corr_dict[fkey]
         save_json_file(jdata, jfile)
