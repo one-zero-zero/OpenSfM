@@ -33,6 +33,13 @@ class OpenSfMConfig:
     feature_use_adaptive_suppression: bool = False
     # Bake segmentation info (class and instance) in the feature data. Thus it is done once for all at extraction time.
     features_bake_segmentation: bool = False
+    # compute the cubemap images from the panorama and extract the features from the cubemap textures for panorama.
+    feature_extract_from_cubemap_panorama: bool = False
+    # rotates the panorama around x and y axes by 45 degrees and augments the extracted features. needs feature_extract_from_cubemap_panorama: True to be enabled
+    feature_extract_from_cubemap_augmented: bool = False
+    # save front and back fov images for panoramas
+    save_front_back_wide_fov: bool = False
+    save_front_back_wide_fov_angle: int = 120
 
     ##################################
     # Params for SIFT
@@ -178,6 +185,8 @@ class OpenSfMConfig:
     robust_matching_threshold: float = 0.004
     # Outlier threshold for essential matrix estimation during matching in radians
     robust_matching_calib_threshold: float = 0.004
+    # Outlier threshold for essential matrix estimation during matching in radians for the same cameras -> if set to 0.0 robust_matching_calib_threshold is used
+    robust_matching_calib_threshold_same_camera: float = 0.0
     # Minimum number of matches to accept matches between two images
     robust_matching_min_match: int = 20
     # Outlier threshold for essential matrix estimation during incremental reconstruction in radians

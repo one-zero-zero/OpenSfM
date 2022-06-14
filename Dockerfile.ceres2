@@ -34,10 +34,11 @@ RUN \
     make -j4 install && \
     cd / && rm -rf /source/ceres-solver-2.0.0
 
+WORKDIR /source/OpenSfM
+COPY requirements.txt /source/OpenSfM/
+RUN pip3 install -r requirements.txt
+RUN pip install opencv-contrib-python
 
 COPY . /source/OpenSfM
 
-WORKDIR /source/OpenSfM
-
-RUN pip3 install -r requirements.txt && \
-    python3 setup.py build
+RUN python3 setup.py build

@@ -6,8 +6,7 @@ from typing import Tuple, Dict, Any, List, Optional
 
 import cv2
 import numpy as np
-from opensfm import context, pyfeatures
-
+from opensfm import context, pyfeatures, geometry
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -554,6 +553,53 @@ def extract_features_orb(
     logger.debug("Found {0} points in {1}s".format(len(points), time.time() - t))
     return points, desc
 
+def run_feature_extractor(
+    image_gray: np.ndarray,
+    config: Dict[str, Any],
+    features_count: int ) -> Tuple[np.ndarray, np.ndarray]:
+
+    feature_type = config["feature_type"].upper()
+    if feature_type == "SIFT":
+        points, desc = extract_features_sift(image_gray, config, features_count)
+    elif feature_type == "SURF":
+        points, desc = extract_features_surf(image_gray, config, features_count)
+    elif feature_type == "AKAZE":
+        points, desc = extract_features_akaze(image_gray, config, features_count)
+    elif feature_type == "HAHOG":
+        points, desc = extract_features_hahog(image_gray, config, features_count)
+    elif feature_type == "ORB":
+        points, desc = extract_features_orb(image_gray, config, features_count)
+    else:
+        raise ValueError(
+            "Unknown feature type " "(must be SURF, SIFT, AKAZE, HAHOG or ORB)"
+        )
+    return points, desc
+
+def transform_from_perspective_to_panorama(perspective_shot, panorama_shot, point_in_perspective):
+    npc = normalized_image_coordinates(point_in_perspective, perspective_shot.camera.width, perspective_shot.camera.height)
+    bearing = perspective_shot.camera.pixel_bearing_many(npc)
+    rotation = np.dot(
+        panorama_shot.pose.get_rotation_matrix(),
+        perspective_shot.pose.get_rotation_matrix().T
+    )
+    rotated_bearing = np.dot(bearing, rotation.T)
+    pp = panorama_shot.camera.project_many(rotated_bearing)
+    dc = denormalized_image_coordinates(pp, panorama_shot.camera.width, panorama_shot.camera.height)
+    return dc
+
+import threading
+class FrameCounter(object):
+    def __init__(self):
+        self.value = 0
+        self._lock = threading.Lock()
+
+    def increment(self) -> int:
+        tval = 0
+        with self._lock:
+            tval = self.value
+            self.value += 1
+        return tval
+frame_counter = FrameCounter()
 
 def extract_features(
     image: np.ndarray, config: Dict[str, Any], is_panorama: bool
@@ -578,6 +624,10 @@ def extract_features(
         - descriptors: the descriptor of each feature
         - colors: the color of the center of each feature
     """
+    from opensfm.undistort import generate_perspective_images_of_a_panorama
+    from opensfm.undistort import generate_front_back_images_of_a_panorama
+    from opensfm.io import imwrite
+
     extraction_size = (
         config["feature_process_size_panorama"]
         if is_panorama
@@ -598,21 +648,51 @@ def extract_features(
         image_gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
     else:
         image_gray = image
-    feature_type = config["feature_type"].upper()
-    if feature_type == "SIFT":
-        points, desc = extract_features_sift(image_gray, config, features_count)
-    elif feature_type == "SURF":
-        points, desc = extract_features_surf(image_gray, config, features_count)
-    elif feature_type == "AKAZE":
-        points, desc = extract_features_akaze(image_gray, config, features_count)
-    elif feature_type == "HAHOG":
-        points, desc = extract_features_hahog(image_gray, config, features_count)
-    elif feature_type == "ORB":
-        points, desc = extract_features_orb(image_gray, config, features_count)
+
+    fid = frame_counter.increment()
+
+    points = np.ndarray([])
+    desc = np.ndarray([])
+    if is_panorama and config["feature_extract_from_cubemap_panorama"]:
+        logger.debug('cubemap based feature extraction enabled')
+        subshot_width = extraction_size
+
+        if config["save_front_back_wide_fov"]:
+            # front/back large fov images
+            fb_images, p_shot = generate_front_back_images_of_a_panorama(config, image, subshot_width, cv2.INTER_AREA)
+            for pshot, pimg in fb_images.items():
+                imwrite("./reports/pano-images/frame-"+str(fid)+"-"+pshot.id+".jpg", pimg)
+
+        # default pose
+        sub_images, pano_shot = generate_perspective_images_of_a_panorama(image_gray, subshot_width, cv2.INTER_AREA)
+        for sub_shot, sub_image in sub_images.items():
+            sub_points, sub_descs = run_feature_extractor(sub_image, config, features_count)
+            pano_points = transform_from_perspective_to_panorama(sub_shot, pano_shot, sub_points)
+            sub_points[:,0] = pano_points[:,0]
+            sub_points[:,1] = pano_points[:,1]
+            if points.shape == ():
+                points = sub_points
+                desc   = sub_descs
+            else:
+                points = np.concatenate((points, sub_points))
+                desc   = np.concatenate((desc,   sub_descs))
+        if config["feature_extract_from_cubemap_augmented"]:
+            # rotate parorama around x and y by 45 degrees
+            R = geometry.rotation_from_ptr( np.pi/4, np.pi/4, 0.0 )
+            sub_images, pano_shot = generate_perspective_images_of_a_panorama(image_gray, subshot_width, cv2.INTER_AREA, R)
+            for sub_shot, sub_image in sub_images.items():
+                sub_points, sub_descs = run_feature_extractor(sub_image, config, features_count)
+                pano_points = transform_from_perspective_to_panorama(sub_shot, pano_shot, sub_points)
+                sub_points[:,0] = pano_points[:,0]
+                sub_points[:,1] = pano_points[:,1]
+                if points.shape == ():
+                    points = sub_points
+                    desc   = sub_descs
+                else:
+                    points = np.concatenate((points, sub_points))
+                    desc   = np.concatenate((desc,   sub_descs))
     else:
-        raise ValueError(
-            "Unknown feature type " "(must be SURF, SIFT, AKAZE, HAHOG or ORB)"
-        )
+        points, desc = run_feature_extractor(image_gray, config, features_count)
 
     xs = points[:, 0].round().astype(int)
     ys = points[:, 1].round().astype(int)

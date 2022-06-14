@@ -1,0 +1,12 @@
+# FROM registry.gitlab.com/julien_invision/opensfm:2022-02-10
+FROM opensfm-local
+
+WORKDIR /scripts
+COPY calibrate-image-set.py .
+
+RUN mkdir -p /external/in
+VOLUME /external/in
+
+WORKDIR /external/in/
+# ENTRYPOINT ["python3"]
+CMD ["python3", "/scripts/calibrate-image-set.py", "-df", "/external/in"]
